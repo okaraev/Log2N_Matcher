@@ -1,0 +1,6 @@
+FROM golang:1.18 as build
+
+WORKDIR /build
+RUN go install golang.org/x/lint/golint@latest
+COPY ["go.mod","go.sum","*.df","*.go", "./"]
+RUN go get -v

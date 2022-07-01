@@ -14,11 +14,12 @@ func getConfig(team string) ([]TeamConfig, error) {
 		Addr: GlobalConfig.Cache,
 	})
 	ctx := context.Background()
-	pattern := fmt.Sprintf("%s*", team)
+	pattern := fmt.Sprintf("%s-*", team)
 	keys, err := rdb.Keys(ctx, pattern).Result()
 	if err != nil {
 		return configs, err
 	}
+	defer rdb.Close()
 	for _, key := range keys {
 		value, err := rdb.Get(ctx, key).Bytes()
 		if err != nil {
@@ -48,6 +49,7 @@ func setConfig(teamConfig TeamConfig) error {
 	if err != nil {
 		return err
 	}
+	defer rdb.Close()
 	return nil
 }
 
@@ -61,5 +63,6 @@ func removeConfig(teamConfig TeamConfig) error {
 	if err != nil {
 		return err
 	}
+	defer rdb.Close()
 	return nil
 }

@@ -76,7 +76,7 @@ func getEnvVars() error {
 		return fmt.Errorf("cannot get snotqserveraddress environment variable")
 	}
 	sqnotcs := strings.Split(string(bytes), "\n")[0]
-	sqcs := fmt.Sprintf("ampq://%s@%s", sqnotcs, SQServerAddress)
+	sqcs := fmt.Sprintf("amqp://%s@%s", sqnotcs, SQServerAddress)
 	if SQName == "" {
 		return fmt.Errorf("cannot get snotqname environment variable")
 	}
@@ -103,7 +103,7 @@ func getEnvVars() error {
 		return err
 	}
 	plogqpass := strings.Split(string(bytes), "\n")[0]
-	plogqcs := fmt.Sprintf("ampq://%s@%s", plogqpass, PLogQServerAddress)
+	plogqcs := fmt.Sprintf("amqp://%s@%s", plogqpass, PLogQServerAddress)
 	if StatusQName == "" {
 		return fmt.Errorf("cannot get statusqname environment variable")
 	}
@@ -112,7 +112,7 @@ func getEnvVars() error {
 		return err
 	}
 	slogqpass := strings.Split(string(bytes), "\n")[0]
-	slogqcs := fmt.Sprintf("ampq://%s@%s", slogqpass, SLogQServerAddress)
+	slogqcs := fmt.Sprintf("amqp://%s@%s", slogqpass, SLogQServerAddress)
 	if StatusQConStr == "" {
 		return fmt.Errorf("cannot get statusqconnectionstringPath environment variable")
 	}

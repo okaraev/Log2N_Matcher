@@ -141,13 +141,13 @@ func main() {
 	throw(err)
 	PRetrier := Retrier{}
 	PRetrier.New(ReceiveMessage)
-	Pmessages, err := PRetrier.Do(GlobalConfig.QueueConfig[0].QConnectionString, GlobalConfig.QueueConfig[0].QName)
+	Pmessages := PRetrier.Do(GlobalConfig.QueueConfig[0].QConnectionString, GlobalConfig.QueueConfig[0].QName)
 	SRetrier := Retrier{}
 	SRetrier.New(ReceiveMessage)
-	Smessages, err := SRetrier.Do(GlobalConfig.QueueConfig[1].QConnectionString, GlobalConfig.QueueConfig[1].QName)
-	throw(err)
-	updates, err := ReceiveMessage(GlobalConfig.QueueConfig[4].QConnectionString, GlobalConfig.QueueConfig[4].QName)
-	throw(err)
+	Smessages := SRetrier.Do(GlobalConfig.QueueConfig[1].QConnectionString, GlobalConfig.QueueConfig[1].QName)
+	URetrier := Retrier{}
+	URetrier.New(ReceiveMessage)
+	updates := URetrier.Do(GlobalConfig.QueueConfig[4].QConnectionString, GlobalConfig.QueueConfig[4].QName)
 	myBreaker := Breaker{}
 	myBreaker.New(SendMessage)
 	forever := make(chan bool)

@@ -38,51 +38,43 @@ type Log struct {
 	Log      string
 }
 
-func (l *Log) MatchConfig(tc []TeamConfig) []Notification {
-	var note []Notification
-	for _, conf := range tc {
-		if conf.LogLogic == "OR" {
+func (l *Log) MatchConfig(TeamConfigs []TeamConfig) []Notification {
+	var notifications []Notification
+	for _, conf := range TeamConfigs {
+		isExpMatches := false
+		if conf.LogPattern == "" {
+			isExpMatches = false
+		} else {
 			ex := regexp.MustCompile(conf.LogPattern)
-			if ex.MatchString(l.Log) || l.Severity == conf.LogSeverity {
-				for _, rec := range conf.NotificationRecipient {
-					nt := Notification{
-						Log:                   l.Log,
-						NotificationMethod:    conf.NotificationMethod,
-						NotificationRecipient: rec,
-						HoldTime:              conf.HoldTime,
-						RetryCount:            conf.RetryCount,
-					}
-					note = append(note, nt)
-				}
+			isExpMatches = ex.MatchString(l.Log)
+		}
+		isMatched := false
+		isAnd := conf.LogLogic == "AND"
+		isOr := conf.LogLogic == "OR"
+		isSeverityMatches := l.Severity == conf.LogSeverity
+		if isOr {
+			if isExpMatches || isSeverityMatches {
+				isMatched = true
 			}
-		} else if conf.LogLogic == "AND" {
-			ex := regexp.MustCompile(conf.LogPattern)
-			if ex.MatchString(l.Log) && l.Severity == conf.LogSeverity {
-				for _, rec := range conf.NotificationRecipient {
-					nt := Notification{
-						Log:                   l.Log,
-						NotificationMethod:    conf.NotificationMethod,
-						NotificationRecipient: rec,
-						HoldTime:              conf.HoldTime,
-						RetryCount:            conf.RetryCount,
-					}
-					note = append(note, nt)
-				}
+		} else if isSeverityMatches {
+			if isAnd && isExpMatches {
+				isMatched = true
+			} else if !isAnd {
+				isMatched = true
 			}
-		} else if conf.LogLogic == "" {
-			if l.Severity == conf.LogSeverity {
-				for _, rec := range conf.NotificationRecipient {
-					nt := Notification{
-						Log:                   l.Log,
-						NotificationMethod:    conf.NotificationMethod,
-						NotificationRecipient: rec,
-						HoldTime:              conf.HoldTime,
-						RetryCount:            conf.RetryCount,
-					}
-					note = append(note, nt)
+		}
+		if isMatched {
+			for _, recipe := range conf.NotificationRecipient {
+				note := Notification{
+					Log:                   l.Log,
+					NotificationMethod:    conf.NotificationMethod,
+					NotificationRecipient: recipe,
+					HoldTime:              conf.HoldTime,
+					RetryCount:            conf.RetryCount,
 				}
+				notifications = append(notifications, note)
 			}
 		}
 	}
-	return note
+	return notifications
 }

@@ -152,7 +152,7 @@ func (r *Retrier) isClosed() bool {
 	return r.Status == "Closed"
 }
 
-func (r *Retrier) Do(RMQServer string, QName string) (<-chan amqp.Delivery, error) {
+func (r *Retrier) Do(RMQServer string, QName string) <-chan amqp.Delivery {
 	result, err := r.Operation(RMQServer, QName)
 	mydelivery := make(chan amqp.Delivery)
 	if err != nil {
@@ -179,6 +179,7 @@ func (r *Retrier) Do(RMQServer string, QName string) (<-chan amqp.Delivery, erro
 				retryResult, err := r.Operation(RMQServer, QName)
 				if err != nil {
 					r.Multiply()
+					log.Println(err)
 				} else {
 					// if retry is success setting status to success and starting routine to receive messages
 					r.Close()
@@ -193,5 +194,5 @@ func (r *Retrier) Do(RMQServer string, QName string) (<-chan amqp.Delivery, erro
 			}
 		}
 	}()
-	return (<-chan amqp.Delivery)(mydelivery), nil
+	return (<-chan amqp.Delivery)(mydelivery)
 }

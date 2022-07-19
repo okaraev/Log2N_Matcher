@@ -7,7 +7,7 @@ RUN go mod download
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 RUN go build -ldflags="-s -w" -o matcher .
 
-FROM okaraev/depwaiter:969d22c61a9f01f67d3b7b67a58b6de058cd3174 as waiter
+FROM okaraev/depwaiter:1cebc50e6571990ce3c63d6080bad028a5403df6 as waiter
 
 FROM scratch
 COPY --from=builder ["/build/matcher", "/"]

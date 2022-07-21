@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 )
@@ -142,7 +143,11 @@ func main() {
 	PRetrier := Retrier{}
 	PRetrier.New(ReceiveMessage)
 	pqcs, pqname := GlobalConfig.QueueConfig[0].QConnectionString, GlobalConfig.QueueConfig[0].QName
-	Pmessages := PRetrier.Do(pqcs, pqname)
+	//Pmessages := PRetrier.Do(pqcs, pqname)
+	Pmessages, err := ReceiveMessage(pqcs, pqname)
+	if err != nil {
+		log.Fatalf("cannot receive messages with CS: %s; QName: %s", pqcs, pqname)
+	}
 	SRetrier := Retrier{}
 	SRetrier.New(ReceiveMessage)
 	sqcs, sqname := GlobalConfig.QueueConfig[1].QConnectionString, GlobalConfig.QueueConfig[1].QName

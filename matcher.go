@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 )
@@ -142,19 +141,16 @@ func main() {
 	throw(err)
 	PRetrier := Retrier{}
 	PRetrier.New(ReceiveMessage)
-	log.Println(GlobalConfig)
-	log.Printf("Starting consume with CS: %s; QName: %s", GlobalConfig.QueueConfig[0].QConnectionString, GlobalConfig.QueueConfig[0].QName)
-	pqcs := GlobalConfig.QueueConfig[0].QConnectionString
-	pqname := GlobalConfig.QueueConfig[0].QName
+	pqcs, pqname := GlobalConfig.QueueConfig[0].QConnectionString, GlobalConfig.QueueConfig[0].QName
 	Pmessages := PRetrier.Do(pqcs, pqname)
 	SRetrier := Retrier{}
 	SRetrier.New(ReceiveMessage)
-	log.Printf("Starting consume with CS: %s; QName: %s", GlobalConfig.QueueConfig[1].QConnectionString, GlobalConfig.QueueConfig[1].QName)
-	Smessages := SRetrier.Do(GlobalConfig.QueueConfig[1].QConnectionString, GlobalConfig.QueueConfig[1].QName)
+	sqcs, sqname := GlobalConfig.QueueConfig[1].QConnectionString, GlobalConfig.QueueConfig[1].QName
+	Smessages := SRetrier.Do(sqcs, sqname)
 	URetrier := Retrier{}
 	URetrier.New(ReceiveMessage)
-	log.Printf("Starting consume with CS: %s; QName: %s", GlobalConfig.QueueConfig[4].QConnectionString, GlobalConfig.QueueConfig[4].QName)
-	updates := URetrier.Do(GlobalConfig.QueueConfig[4].QConnectionString, GlobalConfig.QueueConfig[4].QName)
+	uqcs, uqname := GlobalConfig.QueueConfig[4].QConnectionString, GlobalConfig.QueueConfig[4].QName
+	updates := URetrier.Do(uqcs, uqname)
 	myBreaker := Breaker{}
 	myBreaker.New(SendMessage)
 	forever := make(chan bool)

@@ -144,7 +144,9 @@ func main() {
 	PRetrier.New(ReceiveMessage)
 	log.Println(GlobalConfig)
 	log.Printf("Starting consume with CS: %s; QName: %s", GlobalConfig.QueueConfig[0].QConnectionString, GlobalConfig.QueueConfig[0].QName)
-	Pmessages := PRetrier.Do(GlobalConfig.QueueConfig[0].QConnectionString, GlobalConfig.QueueConfig[0].QName)
+	pqcs := GlobalConfig.QueueConfig[0].QConnectionString
+	pqname := GlobalConfig.QueueConfig[0].QName
+	Pmessages := PRetrier.Do(pqcs, pqname)
 	SRetrier := Retrier{}
 	SRetrier.New(ReceiveMessage)
 	log.Printf("Starting consume with CS: %s; QName: %s", GlobalConfig.QueueConfig[1].QConnectionString, GlobalConfig.QueueConfig[1].QName)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/streadway/amqp"
 )
 
 func getConfig(team string) ([]TeamConfig, error) {
@@ -64,5 +65,33 @@ func removeConfig(teamConfig TeamConfig) error {
 		return err
 	}
 	defer rdb.Close()
+	return nil
+}
+
+func processConfigUpdate(message interface{}, FM FileManager) error {
+	delivery, ok := message.(amqp.Delivery)
+	if !ok {
+		return fmt.Errorf("message argument is not delivery")
+	}
+	myUpd := ConfigUPD{}
+	err := json.Unmarshal(delivery.Body, &myUpd)
+	if err != nil {
+		return err
+	}
+	if myUpd.UpdateType != "Delete" {
+		err := FM.SetConfig(myUpd.TeamConfig)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := FM.RemoveConfig(myUpd.TeamConfig)
+		if err != nil {
+			return err
+		}
+	}
+	err = delivery.Ack(true)
+	if err != nil {
+		return err
+	}
 	return nil
 }

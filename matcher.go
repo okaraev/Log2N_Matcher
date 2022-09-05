@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -139,69 +138,42 @@ func getEnvVars() error {
 func main() {
 	err := getEnvVars()
 	throw(err)
-	PRetrier := Retrier{}
-	PRetrier.New(ReceiveMessage)
-	Pmessages := PRetrier.Do(GlobalConfig.QueueConfig[0].QConnectionString, GlobalConfig.QueueConfig[0].QName)
-	SRetrier := Retrier{}
-	SRetrier.New(ReceiveMessage)
-	Smessages := SRetrier.Do(GlobalConfig.QueueConfig[1].QConnectionString, GlobalConfig.QueueConfig[1].QName)
-	URetrier := Retrier{}
-	URetrier.New(ReceiveMessage)
-	updates := URetrier.Do(GlobalConfig.QueueConfig[4].QConnectionString, GlobalConfig.QueueConfig[4].QName)
-	myBreaker := Breaker{}
-	myBreaker.New(SendMessage)
+	// Creating instance of FileManager for Primary Log Queue
+	FMPLogQ := GetFileManagerDefaultInstance(GlobalConfig.QueueConfig[0])
+	PRetrier := GetRetrierOverloadInstance(FMPLogQ.StartReceiveMessage)
+	Pmessages := PRetrier.Do()
+	// Creating instance of FileManager for Secondary Log Queue
+	FMSLogQ := GetFileManagerDefaultInstance(GlobalConfig.QueueConfig[1])
+	SRetrier := GetRetrierOverloadInstance(FMSLogQ.StartReceiveMessage)
+	Smessages := SRetrier.Do()
+	// Creating instance of FileManager for Primary Notification Queue
+	FMPNotQ := GetFileManagerDefaultInstance(GlobalConfig.QueueConfig[2])
+	// Creating instance of FileManager for Secondary Notification Queue
+	FMSNotQ := GetFileManagerDefaultInstance(GlobalConfig.QueueConfig[3])
+	// Creating instance of Connection Manager for Primary Queue with Primary File Manager
+	myPBreaker := GetBreakerOverloadInstance(FMPNotQ.SendMessage)
+	// Creating instance of Connection Manager for Secondary Queue with Secondary File Manager
+	mySBreaker := GetBreakerOverloadInstance(FMSNotQ.SendMessage)
+	// Creating instance of FileManager for Secondary Notification Queue
+	FMStatusQ := GetFileManagerDefaultInstance(GlobalConfig.QueueConfig[4])
 	forever := make(chan bool)
 	go func() {
 		for message := range Pmessages {
-			mylog := Log{}
-			err = json.Unmarshal(message.Body, &mylog)
-			throw(err)
-			configs, err := getConfig(mylog.Team)
-			throw(err)
-			notifications := mylog.MatchConfig(configs)
-			for _, notification := range notifications {
-				err = myBreaker.Do(GlobalConfig.QueueConfig[2].QConnectionString, GlobalConfig.QueueConfig[2].QName, notification)
-				if err != nil {
-					err = SendMessage(GlobalConfig.QueueConfig[3].QConnectionString, GlobalConfig.QueueConfig[3].QName, notification)
-					throw(err)
-				}
-			}
-			err = message.Ack(true)
+			err := FMSNotQ.ProcessMessage(message, myPBreaker)
 			throw(err)
 		}
 	}()
 	go func() {
 		for message := range Smessages {
-			mylog := Log{}
-			err = json.Unmarshal(message.Body, &mylog)
-			throw(err)
-			configs, err := getConfig(mylog.Team)
-			throw(err)
-			notifications := mylog.MatchConfig(configs)
-			for _, notification := range notifications {
-				err = myBreaker.Do(GlobalConfig.QueueConfig[2].QConnectionString, GlobalConfig.QueueConfig[2].QName, notification)
-				if err != nil {
-					err = SendMessage(GlobalConfig.QueueConfig[3].QConnectionString, GlobalConfig.QueueConfig[3].QName, notification)
-					throw(err)
-				}
-			}
-			err = message.Ack(true)
+			err := FMPLogQ.ProcessMessage(message, mySBreaker)
 			throw(err)
 		}
 	}()
 	go func() {
+		URetrier := GetRetrierOverloadInstance(FMStatusQ.StartReceiveMessage)
+		updates := URetrier.Do()
 		for upd := range updates {
-			myUpd := ConfigUPD{}
-			err = json.Unmarshal(upd.Body, &myUpd)
-			throw(err)
-			if myUpd.UpdateType != "Delete" {
-				err := setConfig(myUpd.TeamConfig)
-				throw(err)
-			} else {
-				err := removeConfig(myUpd.TeamConfig)
-				throw(err)
-			}
-			err = upd.Ack(true)
+			err := FMStatusQ.ProcessConfig(upd)
 			throw(err)
 		}
 	}()
